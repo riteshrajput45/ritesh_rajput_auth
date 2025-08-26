@@ -6,8 +6,7 @@ const { sendResetEmail } = require('./utlies/mailer')
 
 const JWT_SECRET = 'Ritesh@123'
 
-// Signup
-exports.signup = async (req, res) => {
+const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -18,8 +17,7 @@ exports.signup = async (req, res) => {
   }
 };
 
-// Login
-exports.login = async (req, res) => {
+const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.query().findOne({ email });
@@ -28,25 +26,23 @@ exports.login = async (req, res) => {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).json({ error: 'Invalid password' });
 
-    // Generate JWT token
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
-    console.log("token",token)
-    res.json({ 
-      message: 'Login successful', 
+    console.log("token", token)
+    res.json({
+      message: 'Login successful',
       token,
-      user: { id: user.id, email: user.email, name: user.name } 
+      user: { id: user.id, email: user.email, name: user.name }
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// Change Password
-exports.changePassword = async (req, res) => {
+const changePassword = async (req, res) => {
   try {
-    const userId = req.user.id; // Get from middleware
+    const userId = req.user.id;
     const { oldPassword, newPassword } = req.body;
-    
+
     const user = await User.query().findById(userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -62,8 +58,7 @@ exports.changePassword = async (req, res) => {
   }
 };
 
-// Insecure Forgot Password (legacy)
-exports.forgotPassword = async (req, res) => {
+const forgotPassword = async (req, res) => {
   try {
     const { email, newPassword } = req.body;
     const user = await User.query().findOne({ email });
@@ -78,9 +73,7 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-// Secure Password Reset Flow
-// 1) Request reset: generates token valid for 5 minutes and emails link
-exports.requestPasswordReset = async (req, res) => {
+const requestPasswordReset = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email is required' });
@@ -89,7 +82,7 @@ exports.requestPasswordReset = async (req, res) => {
     if (!user) return res.status(200).json({ message: 'If the email exists, a reset link has been sent' });
 
     const token = crypto.randomBytes(32).toString('hex');
-    const expires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    const expires = new Date(Date.now() + 5 * 60 * 1000);
 
     await User.query().findById(user.id).patch({ reset_token: token, reset_token_expires: expires });
 
@@ -104,8 +97,7 @@ exports.requestPasswordReset = async (req, res) => {
   }
 };
 
-// 2) Show reset page: simple HTML with form
-exports.showResetPasswordPage = async (req, res) => {
+const showResetPasswordPage = async (req, res) => {
   try {
     const { token } = req.params;
     if (!token) return res.status(400).send('Invalid link');
@@ -137,10 +129,8 @@ exports.showResetPasswordPage = async (req, res) => {
   }
 };
 
-// 3) Submit new password
-exports.resetPassword = async (req, res) => {
+const resetPassword = async (req, res) => {
   try {
-    // For form submissions, ensure body parsing for urlencoded is enabled in app.js if needed
     const token = req.body.token || req.query.token;
     const { newPassword, confirmPassword } = req.body;
 
@@ -171,19 +161,29 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// Get Profile (Protected route test)
-exports.getProfile = async (req, res) => {
+const getProfile = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.query().findById(userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    res.json({ 
-      id: user.id, 
-      name: user.name, 
-      email: user.email 
+    res.json({
+      id: user.id,
+      name: user.name,
+      email: user.email
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+};
+
+module.exports = {
+  signup,
+  login,
+  changePassword,
+  forgotPassword,
+  requestPasswordReset,
+  showResetPasswordPage,
+  resetPassword,
+  getProfile,
 };

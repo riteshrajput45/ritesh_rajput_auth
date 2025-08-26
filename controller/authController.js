@@ -2,16 +2,16 @@ const User = require('../models/User');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
-const { sendResetEmail } = require('./utlies/mailer')
+const { sendResetEmail } = require('../utlies/mailer')
 
 const JWT_SECRET = 'Ritesh@123'
 
 const signup = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { first_name, last_name, email, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.query().insert({ name, email, password: hashedPassword });
-    res.status(201).json({ id: user.id, name: user.name, email: user.email });
+    const user = await User.query().insert({ first_name, last_name, email, password: hashedPassword });
+    res.status(201).json({ id: user.id, first_name: user.first_name, last_name: user.last_name, email: user.email });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -31,7 +31,7 @@ const login = async (req, res) => {
     res.json({
       message: 'Login successful',
       token,
-      user: { id: user.id, email: user.email, name: user.name }
+      user: { id: user.id, email: user.email, first_name: user.first_name, last_name: user.last_name }
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -169,7 +169,8 @@ const getProfile = async (req, res) => {
 
     res.json({
       id: user.id,
-      name: user.name,
+      first_name: user.first_name,
+      last_name: user.last_name,
       email: user.email
     });
   } catch (err) {
